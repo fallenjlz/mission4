@@ -1,4 +1,6 @@
 version: '3.7'
+volumes:
+  influxdb_data: {}
 
 services:
   geth-bootnode:
@@ -14,6 +16,11 @@ services:
       --ipcdisable
       --networkid=12345
       --netrestrict="172.16.254.0/28"
+      --metrics 
+      --metrics.influxdb 
+      --metrics.influxdb.endpoint "http://influxdb:8086" 
+      --metrics.influxdb.username "geth" 
+      --metrics.influxdb.password "geth"
     networks:
       priv-eth-net:
 
@@ -26,14 +33,17 @@ services:
       --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"  
       --mine
       --networkid=12345
-      --miner.etherbase=218C37A0305E14a7cE5fE661FA4537104B9E003e
-      --unlock 218C37A0305E14a7cE5fE661FA4537104B9E003e 
+      --miner.etherbase=545A814C3cbF5bFfee81DeCaf4C2348B7810E541
+      --unlock 545A814C3cbF5bFfee81DeCaf4C2348B7810E541 
       --password /root/password.txt
+      --metrics 
+      --metrics.influxdb 
+      --metrics.influxdb.endpoint "http://influxdb:8086" 
+      --metrics.influxdb.username "geth" 
+      --metrics.influxdb.password "geth"
     networks:
       priv-eth-net:
 
-
-      
 
   geth-node2:
     hostname: geth-node2
@@ -44,36 +54,37 @@ services:
     command:
       --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"
       --networkid=12345
-      --unlock 7c22EAc04A9D3A715B47c48485299B6AD785b094 
+      --unlock 33b199A469f2f75767D424C99F28E2C0b744a68A  
       --password /root/password.txt
+      --metrics 
+      --metrics.influxdb 
+      --metrics.influxdb.endpoint "http://influxdb:8086" 
+      --metrics.influxdb.username "geth" 
+      --metrics.influxdb.password "geth"
     networks:
       priv-eth-net:
   
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest 
-    restart: always
-    ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw 
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    networks:
-      priv-eth-net:
 
-  prometheus:
-    image: prom/prometheus:v2.25.0
-    restart: always
-    volumes:
-      - ./prometheus_conf/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./prometheus_conf/rules:/etc/prometheus/rules
+  influxdb:
+    container_name: influxdb
+    image: influxdb:1.8
     ports:
-      - "9090:9090"
+      - 8086:8086
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: always
+    env_file:
+      - ./influxdb/influxdb.env
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - ./influxdb/config.yml:/etc/influxdb2/config.yml
     networks:
       priv-eth-net:
-    depends_on:
-      - cadvisor
+    
 
   grafana:
     image: grafana/grafana:8.2.5
@@ -85,7 +96,7 @@ services:
     networks:
       priv-eth-net:
     depends_on:
-      - prometheus
+      - influxdb 
 
 networks:
   priv-eth-net:
