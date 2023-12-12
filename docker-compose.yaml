@@ -17,42 +17,77 @@ services:
     networks:
       priv-eth-net:
 
-  geth-rpc-endpoint:
-    hostname: geth-rpc-endpoint
+  geth-node1:
+    hostname: geth-node1
     image: geth-client-poa
     depends_on:
       - geth-bootnode
     command:
-      --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"
-      --allow-insecure-unlock
-      --http
-      --http.addr="0.0.0.0"
-      --http.api="eth,web3,net,admin,personal"
-      --http.corsdomain="http://localhost"
-      --http.vhosts="localhost"
-      --networkid=12345
-      --netrestrict="172.16.254.0/28"
-    ports:
-      - "8545:8545"
-    networks:
-      priv-eth-net:
-
-  geth-miner:
-    hostname: geth-miner
-    image: geth-client-poa
-    depends_on:
-      - geth-bootnode
-      - geth-rpc-endpoint
-    command:
-      --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"
+      --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"  
       --mine
       --networkid=12345
-      --miner.etherbase=YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
-      --unlock YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
-      --netrestrict="172.16.254.0/28"
+      --miner.etherbase=545A814C3cbF5bFfee81DeCaf4C2348B7810E541
+      --unlock 545A814C3cbF5bFfee81DeCaf4C2348B7810E541
       --password /root/password.txt
     networks:
       priv-eth-net:
+
+
+      
+
+  geth-node2:
+    hostname: geth-node2
+    image: geth-client-poa
+    depends_on:
+      - geth-bootnode
+      - geth-node1
+    command:
+      --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"
+      --networkid=12345
+      --unlock 33b199A469f2f75767D424C99F28E2C0b744a68A
+      --password /root/password.txt
+    networks:
+      priv-eth-net:
+  
+  cadvisor:
+    image: google/cadvisor:latest 
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw 
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      priv-eth-net:
+
+  prometheus:
+    image: prom/prometheus:v2.25.0
+    restart: always
+    volumes:
+      - ./prometheus_conf/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus_conf/rules:/etc/prometheus/rules
+    ports:
+      - "9090:9090"
+    networks:
+      priv-eth-net:
+    depends_on:
+      - cadvisor
+
+  grafana:
+    image: grafana/grafana:7.3.7
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./grafana_conf/provisioning:/etc/grafana/provisioning"
+      - "./grafana_conf/dashboards:/var/lib/grafana/dashboards"
+      - "./grafana_conf/config/grafana.ini:/etc/grafana/grafana.ini"
+    networks:
+      priv-eth-net:
+    depends_on:
+      - prometheus
 
 networks:
   priv-eth-net:
@@ -60,3 +95,4 @@ networks:
     ipam:
       config:
       - subnet: 172.16.254.0/28
+
