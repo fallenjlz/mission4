@@ -26,8 +26,8 @@ services:
       --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"  
       --mine
       --networkid=12345
-      --miner.etherbase=545A814C3cbF5bFfee81DeCaf4C2348B7810E541
-      --unlock 545A814C3cbF5bFfee81DeCaf4C2348B7810E541
+      --miner.etherbase=218C37A0305E14a7cE5fE661FA4537104B9E003e
+      --unlock 218C37A0305E14a7cE5fE661FA4537104B9E003e 
       --password /root/password.txt
     networks:
       priv-eth-net:
@@ -44,13 +44,13 @@ services:
     command:
       --bootnodes="enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@geth-bootnode:30303"
       --networkid=12345
-      --unlock 33b199A469f2f75767D424C99F28E2C0b744a68A
+      --unlock 7c22EAc04A9D3A715B47c48485299B6AD785b094 
       --password /root/password.txt
     networks:
       priv-eth-net:
   
   cadvisor:
-    image: google/cadvisor:latest 
+    image: gcr.io/cadvisor/cadvisor:latest 
     restart: always
     ports:
       - "8080:8080"
@@ -76,14 +76,12 @@ services:
       - cadvisor
 
   grafana:
-    image: grafana/grafana:7.3.7
+    image: grafana/grafana:8.2.5
     restart: always
     ports:
       - "3000:3000"
     volumes:
-      - "./grafana_conf/provisioning:/etc/grafana/provisioning"
-      - "./grafana_conf/dashboards:/var/lib/grafana/dashboards"
-      - "./grafana_conf/config/grafana.ini:/etc/grafana/grafana.ini"
+      - ./grafana_data:/var/lib/grafana
     networks:
       priv-eth-net:
     depends_on:
